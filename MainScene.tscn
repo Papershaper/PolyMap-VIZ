@@ -1,0 +1,86 @@
+[gd_scene load_steps=5 format=3 uid="uid://hf8txtrareui"]
+
+[ext_resource type="PackedScene" uid="uid://2hqlqub253wk" path="res://global_map_scene.tscn" id="1_3mqji"]
+[ext_resource type="Script" uid="uid://br557xftscnh4" path="res://main_scene.gd" id="1_uxrcv"]
+[ext_resource type="Script" uid="uid://dsheyedxbfy0w" path="res://addons/mqtt/mqtt.gd" id="2_rf2cd"]
+[ext_resource type="PackedScene" uid="uid://pxxkg1ofwsqt" path="res://connection_dialog.tscn" id="4_uxrcv"]
+
+[node name="MainScene" type="Control"]
+layout_mode = 3
+anchors_preset = 0
+script = ExtResource("1_uxrcv")
+
+[node name="MQTT" type="Node" parent="."]
+script = ExtResource("2_rf2cd")
+
+[node name="SubViewportContainer" type="SubViewportContainer" parent="."]
+layout_mode = 0
+offset_right = 710.0
+offset_bottom = 510.0
+
+[node name="SubViewport" type="SubViewport" parent="SubViewportContainer"]
+handle_input_locally = false
+size = Vector2i(800, 600)
+render_target_update_mode = 4
+
+[node name="GlobalMapScene" parent="SubViewportContainer/SubViewport" instance=ExtResource("1_3mqji")]
+
+[node name="Panel" type="Panel" parent="."]
+layout_mode = 0
+offset_left = 802.0
+offset_top = 4.0
+offset_right = 1157.0
+offset_bottom = 514.0
+
+[node name="RichTextLabel" type="RichTextLabel" parent="Panel"]
+layout_mode = 0
+offset_left = 20.0
+offset_top = 18.0
+offset_right = 338.0
+offset_bottom = 70.0
+theme_override_colors/default_color = Color(0, 0.976471, 0, 1)
+theme_override_font_sizes/normal_font_size = 32
+text = "Telemetry"
+
+[node name="TelemetryList" type="VBoxContainer" parent="Panel"]
+layout_mode = 0
+offset_left = 18.0
+offset_top = 92.0
+offset_right = 336.0
+offset_bottom = 488.0
+
+[node name="StatusIndicator" type="TextureRect" parent="."]
+layout_mode = 0
+offset_left = 825.0
+offset_top = 567.0
+offset_right = 883.0
+offset_bottom = 622.0
+
+[node name="ClearButton" type="Button" parent="."]
+layout_mode = 0
+offset_left = 1013.0
+offset_top = 564.0
+offset_right = 1141.0
+offset_bottom = 628.0
+text = "Clear"
+
+[node name="MQTTButton" type="Button" parent="."]
+layout_mode = 0
+offset_left = 895.0
+offset_top = 564.0
+offset_right = 1002.0
+offset_bottom = 626.0
+text = "MQTT"
+
+[node name="ConnectionDialog" parent="." instance=ExtResource("4_uxrcv")]
+visible = false
+
+[node name="RichTextLabel" type="RichTextLabel" parent="."]
+layout_mode = 0
+offset_left = 37.0
+offset_top = 662.0
+offset_right = 379.0
+offset_bottom = 702.0
+theme_override_colors/default_color = Color(0.984314, 0, 0, 1)
+theme_override_font_sizes/normal_font_size = 24
+text = "Totally Not Evil Robot Army"

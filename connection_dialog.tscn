@@ -1,0 +1,257 @@
+[gd_scene load_steps=7 format=3 uid="uid://pxxkg1ofwsqt"]
+
+[ext_resource type="Script" uid="uid://b3ipn6dx1xsrc" path="res://connection_dialog.gd" id="1_table"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_table"]
+content_margin_left = 5.0
+content_margin_right = 5.0
+bg_color = Color(0.215686, 0.65098, 0.4, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_ll8m6"]
+content_margin_left = 5.0
+content_margin_right = 5.0
+bg_color = Color(0.341176, 0.101961, 0.0392157, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_vtg3h"]
+content_margin_left = 5.0
+content_margin_right = 5.0
+bg_color = Color(0.341176, 0.101961, 0.0392157, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_7hh27"]
+content_margin_left = 5.0
+content_margin_right = 5.0
+bg_color = Color(0.341176, 0.101961, 0.0392157, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_r7jl6"]
+bg_color = Color(0.140199, 0.0442134, 0.238083, 1)
+
+[node name="ConnectionDialog" type="Window"]
+position = Vector2i(0, 36)
+size = Vector2i(1200, 600)
+script = ExtResource("1_table")
+
+[node name="VBox" type="VBoxContainer" parent="."]
+self_modulate = Color(0.0588235, 1, 1, 1)
+offset_left = 137.0
+offset_top = 82.0
+offset_right = 1017.0
+offset_bottom = 576.0
+
+[node name="HBoxBrokerControl" type="HBoxContainer" parent="VBox"]
+layout_mode = 2
+
+[node name="Labelbroker" type="Label" parent="VBox/HBoxBrokerControl"]
+layout_mode = 2
+theme_type_variation = &"HeaderLarge"
+text = "MQTT broker:"
+
+[node name="ButtonConnect" type="CheckButton" parent="VBox/HBoxBrokerControl"]
+layout_mode = 2
+size_flags_horizontal = 6
+text = "Connect to broker"
+
+[node name="status" type="Label" parent="VBox/HBoxBrokerControl"]
+layout_mode = 2
+size_flags_horizontal = 2
+theme_override_styles/normal = SubResource("StyleBoxFlat_table")
+text = "...Status"
+horizontal_alignment = 1
+
+[node name="ButtonOK" type="Button" parent="VBox/HBoxBrokerControl"]
+layout_mode = 2
+text = " OK "
+
+[node name="HBoxBroker" type="HBoxContainer" parent="VBox"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="VBox/HBoxBroker"]
+layout_mode = 2
+text = "URL: "
+
+[node name="brokeraddress" type="LineEdit" parent="VBox/HBoxBroker"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "192.168.178.79"
+
+[node name="Label4" type="Label" parent="VBox/HBoxBroker"]
+layout_mode = 2
+text = "User:"
+
+[node name="brokeruser" type="LineEdit" parent="VBox/HBoxBroker"]
+layout_mode = 2
+text = "local_test"
+
+[node name="Label5" type="Label" parent="VBox/HBoxBroker"]
+layout_mode = 2
+text = "Pswd:"
+
+[node name="brokerpswd" type="LineEdit" parent="VBox/HBoxBroker"]
+layout_mode = 2
+text = "local_pwd"
+
+[node name="Label2" type="Label" parent="VBox/HBoxBroker"]
+layout_mode = 2
+text = "Port: "
+
+[node name="brokerport" type="LineEdit" parent="VBox/HBoxBroker"]
+layout_mode = 2
+tooltip_text = "Port
+"
+text = "1883"
+
+[node name="Label3" type="Label" parent="VBox/HBoxBroker"]
+layout_mode = 2
+text = "Protocol: "
+
+[node name="brokerprotocol" type="OptionButton" parent="VBox/HBoxBroker"]
+layout_mode = 2
+selected = 0
+item_count = 4
+popup/item_0/text = "tcp://"
+popup/item_0/id = 0
+popup/item_1/text = "ssl://"
+popup/item_1/id = 1
+popup/item_2/text = "ws://"
+popup/item_2/id = 2
+popup/item_3/text = "wss://"
+popup/item_3/id = 3
+
+[node name="HSeparator" type="HSeparator" parent="VBox"]
+custom_minimum_size = Vector2(0, 10)
+layout_mode = 2
+
+[node name="HBoxLastwill" type="HBoxContainer" parent="VBox"]
+layout_mode = 2
+
+[node name="Labellastwill" type="Label" parent="VBox/HBoxLastwill"]
+layout_mode = 2
+theme_type_variation = &"HeaderMedium"
+text = "Last will:"
+
+[node name="Label" type="Label" parent="VBox/HBoxLastwill"]
+layout_mode = 2
+size_flags_horizontal = 10
+text = "topic:"
+
+[node name="lastwilltopic" type="LineEdit" parent="VBox/HBoxLastwill"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "godot/mywill"
+
+[node name="Label2" type="Label" parent="VBox/HBoxLastwill"]
+layout_mode = 2
+text = "message:"
+
+[node name="lastwillmessage" type="LineEdit" parent="VBox/HBoxLastwill"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "goodbye world"
+
+[node name="lastwillretain" type="CheckButton" parent="VBox/HBoxLastwill"]
+layout_mode = 2
+text = "Retain
+"
+
+[node name="HSeparator2" type="HSeparator" parent="VBox"]
+custom_minimum_size = Vector2(0, 10)
+layout_mode = 2
+
+[node name="HBoxSubscriptions" type="HBoxContainer" parent="VBox"]
+layout_mode = 2
+
+[node name="Labellastwill2" type="Label" parent="VBox/HBoxSubscriptions"]
+layout_mode = 2
+theme_type_variation = &"HeaderMedium"
+text = "Subscriptions:"
+
+[node name="Label3" type="Label" parent="VBox/HBoxSubscriptions"]
+layout_mode = 2
+size_flags_horizontal = 10
+text = "topic:"
+
+[node name="subscribetopic" type="LineEdit" parent="VBox/HBoxSubscriptions"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "PolyMap/#"
+
+[node name="subscribe" type="Button" parent="VBox/HBoxSubscriptions"]
+layout_mode = 2
+theme_override_styles/normal = SubResource("StyleBoxFlat_ll8m6")
+text = "subscribe
+"
+
+[node name="subscriptions" type="OptionButton" parent="VBox/HBoxSubscriptions"]
+custom_minimum_size = Vector2(100, 0)
+layout_mode = 2
+size_flags_horizontal = 10
+tooltip_text = "Subscribed topics
+"
+selected = 0
+item_count = 1
+popup/item_0/text = "<none>"
+popup/item_0/id = 0
+
+[node name="unsubscribe" type="Button" parent="VBox/HBoxSubscriptions"]
+layout_mode = 2
+theme_override_constants/outline_size = 0
+theme_override_styles/normal = SubResource("StyleBoxFlat_vtg3h")
+text = "unsubscribe
+"
+
+[node name="HSeparator3" type="HSeparator" parent="VBox"]
+custom_minimum_size = Vector2(0, 10)
+layout_mode = 2
+
+[node name="HBoxPublish" type="HBoxContainer" parent="VBox"]
+layout_mode = 2
+
+[node name="Labellastwill" type="Label" parent="VBox/HBoxPublish"]
+layout_mode = 2
+theme_type_variation = &"HeaderMedium"
+text = "Publish:"
+
+[node name="Label" type="Label" parent="VBox/HBoxPublish"]
+layout_mode = 2
+size_flags_horizontal = 10
+text = "topic:"
+
+[node name="publishtopic" type="LineEdit" parent="VBox/HBoxPublish"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "minone/telemetry"
+
+[node name="Label2" type="Label" parent="VBox/HBoxPublish"]
+layout_mode = 2
+text = "message:"
+
+[node name="publishmessage" type="LineEdit" parent="VBox/HBoxPublish"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "hello there"
+
+[node name="publishretain" type="CheckButton" parent="VBox/HBoxPublish"]
+layout_mode = 2
+text = "Retain
+"
+
+[node name="publish" type="Button" parent="VBox/HBoxPublish"]
+layout_mode = 2
+theme_override_styles/normal = SubResource("StyleBoxFlat_7hh27")
+text = "Publish"
+
+[node name="HSeparator4" type="HSeparator" parent="VBox"]
+custom_minimum_size = Vector2(0, 10)
+layout_mode = 2
+
+[node name="subscribedmessages" type="RichTextLabel" parent="VBox"]
+layout_mode = 2
+size_flags_vertical = 3
+focus_mode = 2
+theme_override_styles/normal = SubResource("StyleBoxFlat_r7jl6")
+bbcode_enabled = true
+text = "[b]Welcom to MQTT connections[/b]
+
+[i]Commands to run on another computer terminal:[/i]
+  > mosquitto_pub -h test.mosquitto.org -t \"godot/abcd\" -m \"Bingo!\"
+  > mosquitto_sub -v -h test.mosquitto.org -t \"godot/#\""
+selection_enabled = true

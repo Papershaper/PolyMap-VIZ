@@ -1,0 +1,21 @@
+[gd_scene load_steps=2 format=3 uid="uid://2hqlqub253wk"]
+
+[ext_resource type="Script" uid="uid://dw1th5qafs6ar" path="res://global_map.gd" id="1_3hhv4"]
+
+[node name="GlobalMapScene" type="Node3D"]
+script = ExtResource("1_3hhv4")
+
+[node name="Grid" type="Node3D" parent="."]
+
+[node name="Camera3D" type="Camera3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0.300706, 0.953717, 0, -0.953717, 0.300706, 50, 180, 110)
+current = true
+fov = 32.4
+far = 1000.0
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+transform = Transform3D(0.707107, 0.5, -0.5, 0, 0.707107, 0.707107, 0.707107, -0.5, 0.5, 0, 100, 0)
+
+[node name="CSGBox3D" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 50, -0.5, 50)
+size = Vector3(100, 0.05, 100)
