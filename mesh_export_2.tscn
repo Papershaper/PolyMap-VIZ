@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3 uid="uid://bnmls07tkbd1v"]
+
+[ext_resource type="Script" uid="uid://dqluynprufstd" path="res://mesh_export_2.gd" id="1_jbf37"]
+
+[node name="mesh_export_2" type="Node"]
+script = ExtResource("1_jbf37")

@@ -15,8 +15,10 @@ script = ExtResource("2_rf2cd")
 
 [node name="SubViewportContainer" type="SubViewportContainer" parent="."]
 layout_mode = 0
-offset_right = 710.0
-offset_bottom = 510.0
+offset_left = -1.0
+offset_top = 7.0
+offset_right = 1173.0
+offset_bottom = 607.0
 
 [node name="SubViewport" type="SubViewport" parent="SubViewportContainer"]
 handle_input_locally = false
@@ -27,10 +29,10 @@ render_target_update_mode = 4
 
 [node name="Panel" type="Panel" parent="."]
 layout_mode = 0
-offset_left = 802.0
-offset_top = 4.0
-offset_right = 1157.0
-offset_bottom = 514.0
+offset_left = 816.0
+offset_top = 23.0
+offset_right = 1171.0
+offset_bottom = 533.0
 
 [node name="RichTextLabel" type="RichTextLabel" parent="Panel"]
 layout_mode = 0
@@ -58,18 +60,18 @@ offset_bottom = 622.0
 
 [node name="ClearButton" type="Button" parent="."]
 layout_mode = 0
-offset_left = 1013.0
-offset_top = 564.0
-offset_right = 1141.0
-offset_bottom = 628.0
+offset_left = 1014.0
+offset_top = 630.0
+offset_right = 1142.0
+offset_bottom = 694.0
 text = "Clear"
 
 [node name="MQTTButton" type="Button" parent="."]
 layout_mode = 0
-offset_left = 895.0
-offset_top = 564.0
-offset_right = 1002.0
-offset_bottom = 626.0
+offset_left = 872.0
+offset_top = 632.0
+offset_right = 979.0
+offset_bottom = 694.0
 text = "MQTT"
 
 [node name="ConnectionDialog" parent="." instance=ExtResource("4_uxrcv")]

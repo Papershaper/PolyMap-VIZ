@@ -1,0 +1,32 @@
+[gd_scene load_steps=6 format=3 uid="uid://c53x8n1tycwt"]
+
+[ext_resource type="PlaneMesh" uid="uid://22k4ia4kl4ya" path="res://robot_backup.tres" id="1_3bbiq"]
+[ext_resource type="Texture2D" uid="uid://bc6rs1ln285qh" path="res://assets/Minone-texture.jpg" id="1_bgpq2"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_lmas3"]
+albedo_texture = ExtResource("1_bgpq2")
+uv1_scale = Vector3(-1, -1, -1)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_eege2"]
+albedo_color = Color(0.286684, 0.286684, 0.286684, 1)
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_b3p8h"]
+material = SubResource("StandardMaterial3D_eege2")
+top_radius = 0.4
+bottom_radius = 0.4
+height = 0.25
+
+[node name="Robot-Minone" type="Node3D"]
+
+[node name="RobotBody" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0.1, 0, 0, 0, 1.6, 0, 0.2, 0)
+mesh = ExtResource("1_3bbiq")
+surface_material_override/0 = SubResource("StandardMaterial3D_lmas3")
+
+[node name="LeftWheel" type="MeshInstance3D" parent="."]
+transform = Transform3D(-4.37114e-08, 1, 0, -1, -4.37114e-08, 0, 0, 0, 1, -1, 0, 0)
+mesh = SubResource("CylinderMesh_b3p8h")
+
+[node name="RightWheel" type="MeshInstance3D" parent="."]
+transform = Transform3D(-4.37114e-08, 1, 0, -1, -4.37114e-08, 0, 0, 0, 1, 1, 0, 0)
+mesh = SubResource("CylinderMesh_b3p8h")

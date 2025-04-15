@@ -123,16 +123,14 @@ func update_telemetry(robot_id: String, telemetry_data: Dictionary) -> void:
 	# Assuming $Panel/TelemetryList is a VBoxContainer.
 	var telemetry_list = $Panel/TelemetryList
 	# Try to get a child node with the robot_id as its name.
-	var robot_label = telemetry_list.get_node_or_null(robot_id)
-	if robot_label == null:
-		# Create a new Label if one does not exist.
-		robot_label = Label.new()
-		robot_label.name = robot_id
-		telemetry_list.add_child(robot_label)
-	var display_text = "\nRobot: %s\nPose: %s\nState: %s\nSub State: %s" % [
-		robot_id,
-		telemetry_data.get("pose", "N/A"),
-		telemetry_data.get("agent_state", "N/A"),
-		telemetry_data.get("sub_state", "None")
-	]
-	robot_label.text = display_text
+	var telemetry_item = telemetry_list.get_node_or_null(robot_id)
+	if telemetry_item == null:
+		# Instance a new TelemetryItem if not already present.
+		var TelemetryItemScene = preload("res://telemetry_item.tscn")
+		telemetry_item = TelemetryItemScene.instantiate()
+		telemetry_item.name = robot_id  # Set the node's name for lookup.
+		telemetry_list.add_child(telemetry_item)
+		telemetry_item.setup(robot_id, telemetry_data)
+	else:
+		# Update the existing TelemetryItem with new telemetry data.
+		telemetry_item.setup(robot_id, telemetry_data)
