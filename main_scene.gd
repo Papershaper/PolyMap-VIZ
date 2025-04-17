@@ -109,6 +109,7 @@ func _on_mqtt_received_message(topic: String, message) -> void:
 				return
 			# Update the telemetry panel with this robot's data.
 			update_telemetry(robot_id, data)
+			$SubViewportContainer/SubViewport/GlobalMapScene.update_robot_marker(robot_id, data)
 			
 func _update_status_indicator(mqtt_connected: bool):
 	if mqtt_connected:

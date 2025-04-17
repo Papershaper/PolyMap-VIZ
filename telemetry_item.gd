@@ -13,6 +13,8 @@ var robot_id: String
 @onready var move_button = $VBoxContainer/TaskCommands/Move
 @onready var turn_button = $VBoxContainer/TaskCommands/Turn
 @onready var scan_button = $VBoxContainer/TaskCommands/Scan
+@onready var angle_input = $VBoxContainer/TaskCommands/AngleInput
+@onready var distance_input = $VBoxContainer/TaskCommands/DistanceInput
 
 func _ready():
 	# Connect button signals in your scene.
@@ -39,10 +41,10 @@ func setup(robot_id_passed: String, telemetry_data: Dictionary) -> void:
 	# Optionally, update other UI controls based on telemetry_data
 
 func _on_manual_pressed() -> void:
-	_publish_command("state", "manual")
+	_publish_command("state", "start_manual")
 
 func _on_autonomous_pressed() -> void:
-	_publish_command("state", "autonomous")
+	_publish_command("state", "start_auto")
 	
 func _on_pause_pressed() -> void:
 	_publish_command("state", "pause")
@@ -51,10 +53,12 @@ func _on_standby_pressed() -> void:
 	_publish_command("state", "standby")
 	
 func _on_turn_pressed() -> void:
-	_publish_command("manual", "turn")
+	var angle_val = angle_input.value
+	_publish_command("manual", "turn", {"angle_deg": angle_val})
 		
 func _on_move_pressed() -> void:
-	_publish_command("manual", "move")
+	var distance_val = distance_input.value
+	_publish_command("manual", "move", {"distance_cm": distance_val})
 		
 func _on_scan_pressed() -> void:
 	_publish_command("manual", "scan")
@@ -63,14 +67,16 @@ func _publish_command(command_type: String, command_value: String, _args: Dictio
 	var payload = ""
 	var topic = ""
 	if command_type == "state":
-		payload = "start_%s" % [command_value]
 		topic = "PolyMap/%s/cmd/state" % robot_id
+		payload = command_value
 	elif command_type == "manual":
 		topic = "PolyMap/%s/cmd/manual" % robot_id
 		if command_value == "turn":
-			payload = '{"action":"turn", "angle_deg": -90, "speed":200, "timeout":5000}'
+			var angle = _args.get("angle_deg", 0)
+			payload = '{"action":"turn", "angle_deg": %s, "speed":200, "timeout":5000}' % [angle]
 		elif command_value == "move":
-			payload = '{"action":"move", "distance_cm": 30, "speed": 200, "timeout":10000}'
+			var distance = _args.get("distance_cm", 0)
+			payload = '{"action":"move", "distance_cm": %s, "speed": 200, "timeout":10000}' % [distance]
 		elif command_value == "scan":
 			payload = '{"action":"scan", "start_angle":30, "end_angle":150, "speed": 60, "timeout":10000}'
 		

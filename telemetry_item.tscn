@@ -43,9 +43,21 @@ layout_mode = 2
 layout_mode = 2
 text = "Move"
 
+[node name="DistanceInput" type="SpinBox" parent="VBoxContainer/TaskCommands"]
+layout_mode = 2
+step = 5.0
+value = 30.0
+rounded = true
+
 [node name="Turn" type="Button" parent="VBoxContainer/TaskCommands"]
 layout_mode = 2
 text = "Turn"
+
+[node name="AngleInput" type="SpinBox" parent="VBoxContainer/TaskCommands"]
+layout_mode = 2
+min_value = -180.0
+max_value = 180.0
+value = -90.0
 
 [node name="Scan" type="Button" parent="VBoxContainer/TaskCommands"]
 layout_mode = 2

@@ -19,6 +19,61 @@ func clear_map() -> void:
 		$Grid.remove_child(child)
 		child.queue_free()
 
+func update_robot_marker(robot_id: String, pose_data: Dictionary) -> void:
+	# Ensure a container node for robot markers exists. We'll call it "RobotMarkers"
+	var markers = get_node_or_null("RobotMarkers")
+	if markers == null:
+		markers = Node3D.new()
+		markers.name = "RobotMarkers"
+		add_child(markers)
+
+	# Remove any existing marker for this robot_id.
+	var existing_marker = markers.get_node_or_null(robot_id)
+	if existing_marker:
+		markers.remove_child(existing_marker)
+		existing_marker.queue_free()
+
+	# Create a new MeshInstance3D for the marker.
+	var marker = MeshInstance3D.new()
+	marker.name = robot_id  # so we can look it up later
+
+	# Create a ConeMesh as a simple visual indicator.
+	var cone = CylinderMesh.new()
+	cone.height = 2.0             # Height of the cone.
+	cone.top_radius = 0.0          # Tip of the cone.
+	cone.bottom_radius = 1.0       # Base radius.
+	marker.mesh = cone
+
+	# Create a simple material to make the marker distinct.
+	var material = StandardMaterial3D.new()
+	material.albedo_color = Color(1, 0.5, 0)  # Orange color, for example.
+	marker.material_override = material
+
+	# Calculate the position using gridX and gridY from the telemetry data.
+	# Assuming that gridX and gridY are provided in telemetry and correspond to grid indices.
+	var grid_x = pose_data.get("gridX", 0)
+	var grid_y = pose_data.get("gridY", 0)
+	# Position the marker; you might want to use the center of the cell by adding half of cell_size.
+	var rows = 120  #/* the same map_array.size() you used in update_map */;
+	var flipped_grid_y = rows - 1 - grid_y
+	var pos = Vector3(grid_x * cell_size + cell_size / 2.0, 0, flipped_grid_y * cell_size + cell_size / 2.0)
+	marker.position = pos
+
+	# Set the marker's rotation.
+	# First, rotate -90° around the X axis so the cone's tip (originally up) points forward (-Z).
+	# Then, rotate around Y by the telemetry orientation (orientation_rad).
+	var orientation_rad = pose_data.get("orientation_rad", 0.0)
+	marker.rotation = Vector3(-PI/2, orientation_rad -PI/2, 0)
+	
+	# Optionally, adjust the height so the cone appears above the map.
+	# For example, raise it by half its height:
+	marker.position.y += cone.height / 2.0
+
+	# Add the marker to the markers container.
+	markers.add_child(marker)
+	print("Updated marker for robot:", robot_id, "at position", pos, "with rotation", marker.rotation)
+
+
 func update_map(data: Dictionary) -> void:
 	# Extract the 2D array from the received data.
 	var map_array = data["global_map"]
@@ -65,7 +120,9 @@ func create_mm_for_cells(map_array: Array, target_value: int, color: Color) -> M
 		for col in range(cols):
 			if map_array[row][col] == target_value:
 				var t = Transform3D.IDENTITY
-				t.origin = Vector3(col * cell_size, 0, row * cell_size)
+				# compute “flipped” row index so that array‑row 0 → scene Z = (rows‑1)*cell_size
+				var flipped_row = rows - 1 - row
+				t.origin = Vector3(col * cell_size, 0, flipped_row * cell_size)
 				transforms.append(t)
 	if transforms.size() == 0:
 		return null
@@ -90,7 +147,7 @@ func create_mm_for_cells(map_array: Array, target_value: int, color: Color) -> M
 		2:
 			# Robot: sphere (appears to float)
 			mesh = SphereMesh.new()
-			mesh.radius = 1.5
+			mesh.radius = 0.2
 		1:
 			# Obstacle: tall cylinder
 			mesh = CylinderMesh.new()
