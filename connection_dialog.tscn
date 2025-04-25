@@ -75,7 +75,7 @@ text = "URL: "
 [node name="brokeraddress" type="LineEdit" parent="VBox/HBoxBroker"]
 layout_mode = 2
 size_flags_horizontal = 3
-text = "192.168.178.79"
+text = "192.168.178.20"
 
 [node name="Label4" type="Label" parent="VBox/HBoxBroker"]
 layout_mode = 2

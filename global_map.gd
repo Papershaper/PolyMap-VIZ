@@ -73,105 +73,76 @@ func update_robot_marker(robot_id: String, pose_data: Dictionary) -> void:
 	markers.add_child(marker)
 	print("Updated marker for robot:", robot_id, "at position", pos, "with rotation", marker.rotation)
 
-
 func update_map(data: Dictionary) -> void:
-	# Extract the 2D array from the received data.
-	var map_array = data["global_map"]
-	
-	# Update grid dimensions.
-	grid_height = map_array.size()
-	if grid_height > 0:
-		grid_width = map_array[0].size()
-	else:
-		grid_width = 0
-	
-	# Clear only the children of the Grid node.
-	for child in $Grid.get_children():
-		$Grid.remove_child(child)
-		child.queue_free()
-	
-	# Create a MultiMeshInstance3D for each cell type.
-	var mm_unexplored = create_mm_for_cells(map_array, 255, Color(0, 0, 0))         # black thin cylinders
-	var mm_explored   = create_mm_for_cells(map_array, 0, Color(0.8, 0.8, 0.8))     # flat tiles (light gray)
-	var mm_obstacle   = create_mm_for_cells(map_array, 1, Color(1, 0, 0))           # tall red cylinders
-	var mm_robot      = create_mm_for_cells(map_array, 2, Color(0, 1, 0))           # bright green sphere
-	
-	
-	if mm_unexplored:
-		$Grid.add_child(mm_unexplored)
-	if mm_explored:
-		$Grid.add_child(mm_explored)
-	if mm_robot:
-		$Grid.add_child(mm_robot)
-	if mm_obstacle:
-		$Grid.add_child(mm_obstacle)
-	
-	print("update_map complete: grid size =", grid_width, "x", grid_height)
-
-# Helper function to create a MultiMeshInstance3D for cells of a given target value.
-func create_mm_for_cells(map_array: Array, target_value: int, color: Color) -> MultiMeshInstance3D:
-	var transforms = []
+	var map_array = data.get("global_map", [])
 	var rows = map_array.size()
 	if rows == 0:
-		return null
+		return
 	var cols = map_array[0].size()
-	# print(map_array)
-	for row in range(rows):
-		for col in range(cols):
-			if map_array[row][col] == target_value:
-				var t = Transform3D.IDENTITY
-				# compute “flipped” row index so that array‑row 0 → scene Z = (rows‑1)*cell_size
-				var flipped_row = rows - 1 - row
-				t.origin = Vector3(col * cell_size, 0, flipped_row * cell_size)
-				transforms.append(t)
-	if transforms.size() == 0:
-		return null
-	
-	var mm = MultiMesh.new()
-	mm.transform_format = MultiMesh.TRANSFORM_3D  # Ensure 3D transforms are used.
-	mm.instance_count = transforms.size()
 
-	# Select a mesh based on the target value.
-	var mesh: Mesh
-	match target_value:
-		255:
-			# Unexplored: very thin black cylinder (e.g., height = 0.2, small radius
-			mesh = CylinderMesh.new()
-			mesh.top_radius = 0.5
-			mesh.bottom_radius = 0.5
-			mesh.height = 1.0
-		0:
-			# Explored/empty: flat tile (BoxMesh with low height)
-			mesh = BoxMesh.new()
-			mesh.size = Vector3(cell_size, 0.1, cell_size)
-		2:
-			# Robot: sphere (appears to float)
-			mesh = SphereMesh.new()
-			mesh.radius = 0.2
-		1:
-			# Obstacle: tall cylinder
-			mesh = CylinderMesh.new()
-			mesh.top_radius = 0.8
-			mesh.bottom_radius = 0.8
-			mesh.height = 4.0
-		_:
-			mesh = BoxMesh.new()
-			mesh.size = Vector3(cell_size, 0.1, cell_size)
-	
+	# clear previous
+	clear_map()
+
+	# build MultiMesh
+	var mm = MultiMesh.new()
+	mm.transform_format = MultiMesh.TRANSFORM_3D
+	mm.use_colors     = true
+	mm.instance_count   = rows * cols
+
+	# one flat tile for every cell
+	var mesh = BoxMesh.new()
+	mesh.size = Vector3(cell_size, 0.1, cell_size)
 	mm.mesh = mesh
 
-	for i in range(transforms.size()):
-		mm.set_instance_transform(i, transforms[i])
-	
-	var mm_instance = MultiMeshInstance3D.new()
-	mm_instance.multimesh = mm
-	
-	# Create a simple uniform material.
-	var material = StandardMaterial3D.new()
-	material.albedo_color = color
-	mm_instance.material_override = material
-	
-	return mm_instance
+	# instance container
+	var inst = MultiMeshInstance3D.new()
+	inst.multimesh = mm
+
+	# material that uses per-instance colours + alpha
+	var mat = StandardMaterial3D.new()
+	mat.vertex_color_use_as_albedo = true
+	#mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA_DEPTH_PRE_PASS
+	inst.material_override = mat
+
+	# populate transforms + colours
+	var idx = 0
+	for row in range(rows):
+		for col in range(cols):
+			var t = Transform3D.IDENTITY
+			var flipped = rows - 1 - row
+			t.origin = Vector3(col * cell_size, 0, flipped * cell_size)
+			mm.set_instance_transform(idx, t)
+
+			var raw = int(map_array[row][col])
+			mm.set_instance_color(idx, occupancy_to_colour(raw))
+			idx += 1
+
+	$Grid.add_child(inst)
+	print("Map updated: ", cols, "×", rows)
+
+
+func occupancy_to_colour(val: int) -> Color:
+	# val ∈ [0..255], 128 = unknown
+	# TODO: adjust these mappings to taste!
+	if val == 128:
+		# unexplored: light grey, very transparent
+		return Color(0.5,0.5,0.5, 0.1)
+	elif val < 128:
+		# free cells: map 127→0  → alpha [0.1..0.5], brightness white→grey
+		var norm = float(127 - val) / 127.0
+		var alpha = lerp(0.1, 0.5, norm)
+		var grey  = lerp(1.0, 0.7, norm)
+		return Color(grey, grey, grey, alpha)
+	else:
+		# occupied: map 129→255 → alpha [0.5..1.0], brightness grey→black
+		var norm = float(val - 129) / float(255 - 129)
+		var alpha = lerp(0.5, 1.0, norm)
+		var grey  = lerp(0.7, 0.0, norm)
+		return Color(grey, grey, grey, alpha)
+		
+
+
 
 func _input(event: InputEvent) -> void:
 	if event is InputEventMouseButton:
