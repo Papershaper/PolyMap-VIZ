@@ -31,8 +31,8 @@ render_target_update_mode = 4
 layout_mode = 0
 offset_left = 816.0
 offset_top = 23.0
-offset_right = 1171.0
-offset_bottom = 533.0
+offset_right = 1223.0
+offset_bottom = 595.0
 
 [node name="RichTextLabel" type="RichTextLabel" parent="Panel"]
 layout_mode = 0
@@ -53,10 +53,10 @@ offset_bottom = 488.0
 
 [node name="StatusIndicator" type="TextureRect" parent="."]
 layout_mode = 0
-offset_left = 825.0
-offset_top = 567.0
-offset_right = 883.0
-offset_bottom = 622.0
+offset_left = 785.0
+offset_top = 634.0
+offset_right = 843.0
+offset_bottom = 689.0
 
 [node name="ClearButton" type="Button" parent="."]
 layout_mode = 0

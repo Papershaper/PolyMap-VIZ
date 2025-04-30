@@ -83,7 +83,7 @@ func update_map(data: Dictionary) -> void:
 	# clear previous
 	clear_map()
 
-	# build MultiMesh
+	# build single MultiMesh for all cells
 	var mm = MultiMesh.new()
 	mm.transform_format = MultiMesh.TRANSFORM_3D
 	mm.use_colors     = true
@@ -91,35 +91,110 @@ func update_map(data: Dictionary) -> void:
 
 	# one flat tile for every cell
 	var mesh = BoxMesh.new()
-	mesh.size = Vector3(cell_size, 0.1, cell_size)
+	mesh.size = Vector3(cell_size, 1.0, cell_size)
 	mm.mesh = mesh
 
 	# instance container
 	var inst = MultiMeshInstance3D.new()
 	inst.multimesh = mm
+	
+	# 5) Give it a shader that uses vertex-colors + glow
+	var shader = Shader.new()
+	shader.code = """
+		shader_type spatial;
+		render_mode unshaded, cull_disabled;
+
+		uniform float glow_boost : hint_range(0.0, 10.0) = 2.0;
+
+		void fragment() {
+			ALBEDO   = COLOR.rgb;
+			ALPHA    = COLOR.a;
+			EMISSION = COLOR.rgb * glow_boost;
+		}
+	"""
 
 	# material that uses per-instance colours + alpha
-	var mat = StandardMaterial3D.new()
-	mat.vertex_color_use_as_albedo = true
-	#mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA_DEPTH_PRE_PASS
+	var mat = ShaderMaterial.new()
+	mat.shader = shader
 	inst.material_override = mat
 
+	# Predefine obstacle‐height range (in world units)
+	var obs_min_h = 0.5
+	var obs_max_h = 2.0
+	
 	# populate transforms + colours
 	var idx = 0
 	for row in range(rows):
 		for col in range(cols):
+			# position each cell, flipping Y → Z so row 0 is at back
 			var t = Transform3D.IDENTITY
 			var flipped = rows - 1 - row
 			t.origin = Vector3(col * cell_size, 0, flipped * cell_size)
 			mm.set_instance_transform(idx, t)
 
+			# scale
 			var raw = int(map_array[row][col])
-			mm.set_instance_color(idx, occupancy_to_colour(raw))
+			var scale_vec = Vector3.ONE
+
+			if raw == 128:
+				# unknown → shrink to 80%
+				scale_vec = Vector3(0.8, 0.8, 0.8)
+			elif raw < 128:
+				# free → very flat
+				scale_vec = Vector3(1, 0.1, 1)
+			else:
+				# occupied → height between obs_min_h…obs_max_h
+				var norm = float(raw - 129) / float(255 - 129)
+				var h = lerp(obs_min_h, obs_max_h, norm)
+				scale_vec = Vector3(1, h, 1)
+			# apply local-scale
+			t = t.scaled_local(scale_vec)
+
+			# c) write transform & colour
+			mm.set_instance_transform(idx, t)
+			mm.set_instance_color(idx, byte_to_color(raw))
 			idx += 1
 
 	$Grid.add_child(inst)
 	print("Map updated: ", cols, "×", rows)
+	
+func byte_to_color(v: int) -> Color:
+	# 128 = unknown slate‐gray
+	if v == 128:
+		return Color(0, 0, 0, 1.0)
+
+	var t: float
+	var r0:int; var g0:int; var b0:int
+	var r1:int; var g1:int; var b1:int
+	var a0:int = 0; var a1:int = 255
+
+	if v < 81:
+		t = v / 80.0
+		r0 = 17;  g0 = 22;  b0 = 66    # indigo
+		r1 = 0;   g1 = 191; b1 = 255   # azure
+		a1 = 50                      # α→0.2
+	elif v < 128:
+		t = (v - 81) / 47.0
+		r0 = 0;   g0 = 191; b0 = 255   # azure
+		r1 = 0;   g1 = 255; b1 = 160   # teal
+		a0 = 50;  a1 = 100             # α 0.2→0.4
+	elif v < 201:
+		t = (v - 129) / 71.0
+		r0 = 0;   g0 = 255; b0 = 160   # teal
+		r1 = 122; g1 = 255; b1 = 0     # lime-neon
+		a0 = 128; a1 = 178             # α 0.5→0.7
+	else:
+		t = (v - 201) / 54.0
+		r0 = 122; g0 = 255; b0 = 0     # lime-neon
+		r1 = 255; g1 = 145; b1 = 0     # hot-amber
+		a0 = 204; a1 = 255             # α 0.8→1.0
+
+	# normalize & lerp
+	var c_start = Color(r0/255.0, g0/255.0, b0/255.0)
+	var c_end   = Color(r1/255.0, g1/255.0, b1/255.0)
+	var base    = c_start.lerp(c_end, t)
+	var alpha   = lerp(a0, a1, t) / 255.0
+	return Color(base.r, base.g, base.b, alpha)
 
 
 func occupancy_to_colour(val: int) -> Color:
