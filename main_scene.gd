@@ -6,11 +6,13 @@ var receivedmessagecount = 0
 @onready var connection_dialog   = $ConnectionDialog
 @onready var clear_button = $ClearButton
 @onready var mqtt_button = $MQTTButton
+@onready var reset_button = $ResetButton
 
 func _ready():
 	print("Main scene ready.")
 	clear_button.pressed.connect(_on_clear_pressed)
 	mqtt_button.pressed.connect(_on_open_connection_dialog_pressed)
+	reset_button.pressed.connect(_on_reset_pressed)
 	connectedactionsactive(false)
 	
 	# Set the connection indicator to red (disconnected) initially.
@@ -119,6 +121,9 @@ func _update_status_indicator(mqtt_connected: bool):
 
 func _on_clear_pressed():
 	$SubViewportContainer/SubViewport/GlobalMapScene.clear_map()
+
+func _on_reset_pressed():
+	$SubViewportContainer/SubViewport/GlobalMapScene/CameraRig.reset_view()
 	
 func update_telemetry(robot_id: String, telemetry_data: Dictionary) -> void:
 	# Assuming $Panel/TelemetryList is a VBoxContainer.

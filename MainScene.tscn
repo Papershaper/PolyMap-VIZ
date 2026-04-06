@@ -18,7 +18,7 @@ layout_mode = 0
 offset_left = -1.0
 offset_top = 7.0
 offset_right = 1173.0
-offset_bottom = 607.0
+offset_bottom = 614.0
 
 [node name="SubViewport" type="SubViewport" parent="SubViewportContainer"]
 handle_input_locally = false
@@ -60,11 +60,19 @@ offset_bottom = 689.0
 
 [node name="ClearButton" type="Button" parent="."]
 layout_mode = 0
-offset_left = 1014.0
-offset_top = 630.0
-offset_right = 1142.0
-offset_bottom = 694.0
+offset_left = 995.0
+offset_top = 631.0
+offset_right = 1123.0
+offset_bottom = 695.0
 text = "Clear"
+
+[node name="ResetButton" type="Button" parent="."]
+layout_mode = 0
+offset_left = 1137.0
+offset_top = 631.0
+offset_right = 1217.0
+offset_bottom = 695.0
+text = "Reset"
 
 [node name="MQTTButton" type="Button" parent="."]
 layout_mode = 0
@@ -79,10 +87,10 @@ visible = false
 
 [node name="RichTextLabel" type="RichTextLabel" parent="."]
 layout_mode = 0
-offset_left = 37.0
-offset_top = 662.0
-offset_right = 379.0
-offset_bottom = 702.0
+offset_left = 247.0
+offset_top = 12.0
+offset_right = 589.0
+offset_bottom = 52.0
 theme_override_colors/default_color = Color(0.984314, 0, 0, 1)
 theme_override_font_sizes/normal_font_size = 24
 text = "Totally Not Evil Robot Army"

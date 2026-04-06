@@ -4,10 +4,7 @@ extends Node3D
 var grid_width: int = 20    # number of cells along x
 var grid_height: int = 20   # number of cells along z
 var cell_size: float = 1.0
-# Adjust these limits as needed.
-var min_fov: float = 10.0
-var max_fov: float = 90.0
-var zoom_step: float = 5.0
+
 
 func _ready():
 	# Optionally, initialize or wait for the first update.
@@ -71,6 +68,7 @@ func update_robot_marker(robot_id: String, pose_data: Dictionary) -> void:
 
 	# Add the marker to the markers container.
 	markers.add_child(marker)
+	$CameraRig.follow_target(marker)
 	print("Updated marker for robot:", robot_id, "at position", pos, "with rotation", marker.rotation)
 
 func update_map(data: Dictionary) -> void:
@@ -102,7 +100,7 @@ func update_map(data: Dictionary) -> void:
 	var shader = Shader.new()
 	shader.code = """
 		shader_type spatial;
-		render_mode unshaded, cull_disabled;
+		render_mode unshaded, cull_disabled, depth_prepass_alpha;
 
 		uniform float glow_boost : hint_range(0.0, 10.0) = 2.0;
 
@@ -216,24 +214,3 @@ func occupancy_to_colour(val: int) -> Color:
 		var grey  = lerp(0.7, 0.0, norm)
 		return Color(grey, grey, grey, alpha)
 		
-
-
-
-func _input(event: InputEvent) -> void:
-	if event is InputEventMouseButton:
-		# Check if the event occurred over the viewport.
-		# You might want to check the global mouse position if you have multiple viewports.
-		if event.button_index == MOUSE_BUTTON_WHEEL_UP and event.pressed:
-			zoom_in()
-		elif event.button_index == MOUSE_BUTTON_WHEEL_DOWN and event.pressed:
-			zoom_out()
-
-func zoom_in() -> void:
-	# Decrease FOV to zoom in, clamping to a minimum value.
-	$Camera3D.fov = max(min_fov, $Camera3D.fov - zoom_step)
-	# print("Zooming in: FOV =", $Camera3D.fov)
-
-func zoom_out() -> void:
-	# Increase FOV to zoom out, clamping to a maximum value.
-	$Camera3D.fov = min(max_fov, $Camera3D.fov + zoom_step)
-	# print("Zooming out: FOV =", $Camera3D.fov)
