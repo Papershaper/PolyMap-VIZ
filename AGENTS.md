@@ -4,95 +4,184 @@ This repository is a Godot-based mission-control visualization and operator-cons
 
 ## Product Direction
 
-The primary use case is to follow and assist an autonomous robot that maps physical space using minimal sensors. The visualization began partly as a debug/operator tool, but the target direction is a broader mission-control interface.
+The primary use case is to follow, monitor, and assist an autonomous robot that maps physical space using minimal sensors. The visualization began partly as a debug/operator tool, but the intended direction is a broader mission-control interface.
 
-Assume the visualization is part of the same system as Minone firmware and PolyMap platform services. Do not treat it as an isolated demo app.
+Assume this visualization is one subsystem within the larger PolyMap / Minone system. It is not a standalone demo app, and it should not be treated as separate from robot firmware, platform services, or the evolving autonomy stack.
 
-## Sources Of Truth
+The current product focus is a single active exploration robot with operator visibility and intervention. Future expansion to multi-robot workflows is expected, so avoid design choices that hard-code single-robot assumptions into core architecture.
 
-* Runtime code is the source of truth for currently implemented behavior.
-* `MQTT_CONTRACT.md` is the source of truth for canonical platform MQTT topics, current repo alignment, and recommended cleanup.
-* Documentation must separate:
+## Sources of Truth
 
-  * current implemented behavior
-  * canonical platform intent
-  * proposed cleanup or refactor direction
+Use the following hierarchy when analyzing or modifying this repository:
 
-Prefer facts from code over stale comments or old docs.
+- Runtime code is the source of truth for **currently implemented behavior**.
+- `MQTT_CONTRACT.md` is the source of truth for:
+  - canonical platform MQTT topics
+  - current repository alignment with that contract
+  - known implementation gaps
+  - recommended cleanup direction
+- Documentation should clearly distinguish between:
+  - current implemented behavior
+  - canonical platform intent
+  - recommended or proposed refactor direction
+
+Prefer verified behavior from code over stale comments, historical assumptions, or outdated notes.
+
+## Core Working Assumptions
+
+- This repository owns visualization, operator interaction, and related UI/UX behavior.
+- It does **not** own robot firmware behavior or core mapping algorithms.
+- MQTT is the integration boundary between this visualization and the wider PolyMap / Minone system.
+- Existing behavior should be preserved unless a task explicitly requests a behavior change.
+- Prototype history may explain some design choices, but current and intended product direction matters more than legacy/debug origins.
 
 ## Priorities
 
-* Understand current implemented behavior before proposing changes.
-* Preserve working runtime behavior unless the task explicitly requests a behavior change.
-* Prefer small, reversible refactors over broad rewrites.
-* Keep documentation concise, technical, and explicit about current vs desired state.
-* Note simulation or prototype artifacts if present, but do not overemphasize prototype history.
+When working in this repository, prioritize the following:
 
-## Architecture Rules
+1. Understand the current implemented behavior before proposing changes.
+2. Preserve working runtime behavior unless the task explicitly asks for change.
+3. Prefer small, reversible refactors over broad rewrites.
+4. Keep documentation concise, technical, and explicit about what is implemented today.
+5. Separate architectural cleanup from behavioral change.
+6. Improve structure in ways that make the codebase easier to maintain and easier for Codex to extend safely.
 
-* Avoid hard-coded scene-tree paths such as `/root/...` for runtime dependencies.
-* Prefer signals, injected references, or controller/service nodes over direct scene-path lookups.
-* Do not spread MQTT topic parsing across UI components.
-* Centralize MQTT topic names, topic parsing, and payload shape handling.
-* Keep scene scripts lean. Move reusable logic into plain GDScript classes or service-style scripts where practical.
-* UI components should emit operator intent; publishing MQTT directly from leaf UI nodes should be avoided unless explicitly required by the current architecture.
+## Architecture Principles
 
-## Godot Conventions
+### General
 
-* Preserve the current project entry point unless explicitly asked to change it.
-* Favor scene composition for structure and scripts for behavior.
-* Avoid hidden coupling between scenes through fragile node lookups.
-* Preserve signal wiring and scene responsibilities unless the task includes a deliberate architectural refactor.
+- Favor clear boundaries between UI, runtime orchestration, and protocol/domain logic.
+- Avoid hidden coupling between scenes through fragile node-path lookups.
+- Prefer explicit ownership of state and message handling.
+- Keep responsibilities narrow and easy to inspect.
+
+### Godot Structure
+
+- Preserve the existing project entry point unless explicitly asked to change it.
+- Favor scenes for composition and scripts for behavior.
+- Keep scene scripts lean where practical.
+- Move reusable or non-visual logic into plain GDScript classes or service-style scripts where that improves clarity.
+- Preserve signal wiring and scene responsibilities unless the task includes deliberate restructuring.
+
+### Dependency Management
+
+- Avoid hard-coded scene-tree paths such as `/root/...` for runtime dependencies.
+- Prefer signals, injected references, controller nodes, or service-style access patterns over brittle node-path lookups.
+- Do not introduce new hidden runtime dependencies between leaf UI nodes and top-level application nodes.
+
+### MQTT and Domain Boundaries
+
+- Do not spread MQTT topic parsing across multiple unrelated UI scripts.
+- Centralize MQTT topic names, topic parsing, and payload-shape handling.
+- Treat raw MQTT transport concerns separately from domain interpretation.
+- UI components should not be responsible for interpreting arbitrary MQTT topics.
+- Leaf UI nodes should prefer emitting operator intent rather than directly implementing transport behavior, unless the current task explicitly preserves existing coupling.
 
 ## UI/UX Direction
 
-* Favor mission-control clarity over debug-tool clutter or game-like styling.
-* Emphasize spatial awareness, robot state visibility, operator confidence, and command feedback.
-* The primary workflow is:
+This project should evolve toward a **mission-control** interface rather than remain a pure debug panel.
 
-  * observe map progress
-  * inspect telemetry
-  * detect stale or problematic robot state
-  * issue operator commands when needed
-* Optimize first for a single active exploration robot, while avoiding assumptions that prevent future multi-robot workflows.
+Favor:
 
-## Safe Changes
+- spatial awareness
+- operator confidence
+- clear robot state visibility
+- command feedback
+- readable telemetry hierarchy
+- restrained, technical visual design
 
-These are generally safe unless the task says otherwise:
+Avoid:
 
-* extracting constants
-* centralizing MQTT topic handling
-* replacing direct node-path coupling with signals or injected dependencies
-* moving reusable logic out of UI scripts
-* improving technical documentation
-* clarifying schema and contract boundaries
+- cluttered debug-tool presentation
+- game-like styling that obscures operational clarity
+- decorative complexity that does not improve operator understanding
 
-## Changes That Require Explicit Approval
+The primary operator workflow is:
 
-Do not make these changes unless explicitly requested:
+1. observe map progress
+2. inspect robot telemetry and autonomy state
+3. detect stale, risky, or abnormal conditions
+4. intervene with commands when needed
+5. regain situational awareness quickly after intervention
 
-* changing canonical MQTT topic names
-* changing command payload semantics
-* removing operator-facing controls
-* changing scene entry points
-* changing coordinate conventions or map orientation rules without updating contract docs
-* broad runtime rewrites justified only by style preference
+Design first for one active exploration robot, but do not bake single-robot assumptions into protocol, state, or data model layers if they can be avoided cleanly.
 
 ## Documentation Rules
 
-When documenting MQTT or runtime behavior, always distinguish between:
+When documenting runtime behavior or MQTT behavior:
 
-* current implemented behavior
-* canonical platform contract
-* recommended cleanup
+- clearly separate **implemented behavior** from **canonical contract**
+- clearly separate **current behavior** from **recommended cleanup**
+- do not describe desired architecture as if it is already implemented
+- do not invent platform guarantees that are not present in code or contract docs
 
-Do not present recommended architecture as if it is already implemented.
+Documentation should be brief, technical, and useful to future maintainers and coding agents.
 
-## Done Criteria For Refactor Work
+## Safe Changes
+
+The following are generally safe to propose or implement unless a task says otherwise:
+
+- extracting constants
+- centralizing MQTT topic handling
+- centralizing payload-shape handling
+- replacing brittle node-path lookups with signals or injected references
+- moving reusable logic out of UI scripts
+- clarifying runtime/documentation boundaries
+- improving technical docs
+- introducing lightweight controller/service layers where they reduce coupling
+- removing obvious duplication without altering behavior
+
+## Changes That Require Explicit Approval
+
+Do not make these changes unless the task explicitly requests them:
+
+- changing canonical MQTT topic names
+- changing command payload semantics
+- changing externally visible topic shapes
+- removing operator-facing controls
+- changing the project entry scene
+- changing coordinate conventions or map-orientation rules without updating related docs
+- broad runtime rewrites justified only by style preference
+- replacing working implemented behavior with speculative architecture
+
+## Refactor Expectations
+
+A good refactor in this repository should:
+
+- preserve behavior first
+- reduce coupling
+- make contracts easier to see
+- make state flow easier to follow
+- improve Codex-readability of the codebase
+- avoid unnecessary churn in scene structure or public-facing behavior
+
+Prefer refactors that expose seams for future work, such as:
+
+- centralized contract definitions
+- explicit message routing
+- clearer ownership of robot state
+- clearer separation between UI intent and transport operations
+
+## Coding Guidance for Agents
+
+When proposing or generating code:
+
+- inspect existing code paths before suggesting replacements
+- align naming with the repository’s current domain language
+- keep patches focused and local when possible
+- avoid introducing parallel architectures unless migration is explicit
+- do not assume undocumented abstractions already exist
+- do not silently broaden behavior while attempting to “clean up” code
+
+If behavior is ambiguous, state what is implemented today and what is being inferred.
+
+## Done Criteria for Refactor Work
 
 A refactor is not complete unless all of the following remain true:
 
-* the project still opens and runs from the current entry scene
-* no new hard-coded scene-path coupling is introduced
-* MQTT contract logic is not duplicated across multiple UI scripts
-* documentation is updated when runtime behavior or contract assumptions change
+- the project still opens and runs from the current entry scene
+- no new hard-coded scene-path coupling is introduced
+- MQTT contract logic is not further duplicated across UI scripts
+- current implemented behavior is either preserved or explicitly documented as changed
+- relevant documentation is updated when contract assumptions or runtime behavior change
+- the resulting structure is easier, not harder, for a future coding agent to extend safely
