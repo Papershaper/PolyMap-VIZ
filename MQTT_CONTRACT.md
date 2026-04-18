@@ -11,6 +11,7 @@ This document separates:
 Code references in this document are based on:
 
 - `main_scene.gd`
+- `polymap_mqtt.gd`
 - `telemetry_item.gd`
 - `connection_dialog.gd`
 - `connection_dialog.tscn`
@@ -68,9 +69,9 @@ Canonical intent:
 
 Current implementation:
 
-- handled in `main_scene.gd`
-- message match rule is `topic.find("telemetry") != -1`
-- `robot_id` is extracted from `topic.split("/")` using `parts[1]`
+- handled in `main_scene.gd` using helper functions in `polymap_mqtt.gd`
+- message match rule is still `topic.find("telemetry") != -1`
+- `robot_id` is still extracted from `topic.split("/")` using `parts[1]`
 - this means the code only derives the correct `robot_id` when the topic shape is effectively `PolyMap/{robot_id}/...`
 - payload is expected to be JSON
 
@@ -124,7 +125,8 @@ Canonical intent:
 
 Current implementation:
 
-- published from `telemetry_item.gd`
+- operator intent is emitted from `telemetry_item.gd`
+- topic and payload are built in `main_scene.gd` via `polymap_mqtt.gd`
 - topic is built exactly as `PolyMap/%s/cmd/state`
 - `robot_id` comes from the telemetry topic that created the card
 - payload type is a plain string
@@ -150,7 +152,8 @@ Canonical intent:
 
 Current implementation:
 
-- published from `telemetry_item.gd`
+- operator intent is emitted from `telemetry_item.gd`
+- topic and payload are built in `main_scene.gd` via `polymap_mqtt.gd`
 - topic is built exactly as `PolyMap/%s/cmd/manual`
 - `robot_id` comes from the telemetry topic that created the card
 - payload type is a JSON string
@@ -188,8 +191,8 @@ Map Manager publication shape:
 
 Current implementation:
 
-- handled in `main_scene.gd`
-- message match rule is `topic.begins_with("PolyMap/global_map")`
+- handled in `main_scene.gd` using helper functions in `polymap_mqtt.gd`
+- message match rule is still `topic.begins_with("PolyMap/global_map")`
 - exact canonical topic works
 - suffixed topics such as `PolyMap/global_map/...` also match because the check is prefix-based
 - payload is expected to be JSON with a top-level `global_map` key
@@ -230,6 +233,7 @@ However, the current visualization should still be considered single-robot-orien
 - there is one shared global map view
 - there is no explicit robot selection or fleet-management workflow
 - the camera follows the marker that was updated most recently
+- if telemetry arrives before the first map, the marker is shown using raw telemetry grid coordinates until a map snapshot arrives
 - there is no implemented handling for multiple robots contributing separate local-map topics
 
 Practical interpretation:
@@ -273,14 +277,15 @@ These are operator tools, not part of the canonical PolyMap topic contract.
 ### Map/Telemetry Coupling
 
 - map rendering uses the received `global_map` dimensions
-- robot marker Y-to-Z flipping uses a hard-coded row count of `120`
-- marker placement can therefore disagree with the rendered map when the map height is not `120`
+- robot marker Y-to-Z flipping now uses the last received `global_map` row count
+- if no map has been received yet, robot markers are shown using raw telemetry grid coordinates
 
 ### MQTT Access Pattern
 
-- `connection_dialog.gd` looks up MQTT as `../MQTT`
-- `telemetry_item.gd` looks up MQTT as `/root/MainScene/MQTT`
-- MQTT topic and payload definitions are not centralized in one constants file
+- `main_scene.gd` is now the only runtime script that talks directly to the `MQTT` node
+- `connection_dialog.gd` emits broker and publish/subscribe intent signals
+- `telemetry_item.gd` emits operator command intent signals
+- MQTT topic and payload helper logic is centralized in `polymap_mqtt.gd`
 
 ## Recommended Cleanup
 

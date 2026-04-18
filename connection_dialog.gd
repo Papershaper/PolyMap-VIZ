@@ -1,5 +1,11 @@
 extends Window
 
+signal connect_requested(protocol: String, address: String, port: String, username: String, password: String, last_will_topic: String, last_will_message: String, last_will_retain: bool)
+signal disconnect_requested()
+signal subscribe_requested(topic: String, qos: int)
+signal unsubscribe_requested(topic: String)
+signal publish_requested(topic: String, message: String, retain: bool, qos: int)
+
 # References to the input fields in the dialog.
 @onready var broker_address = $VBox/HBoxBroker/brokeraddress
 @onready var broker_protocol = $VBox/HBoxBroker/brokerprotocol
@@ -32,42 +38,29 @@ func _on_brokerprotocol_item_selected(index):
 	broker_port.text = "%d" % default_ports[index]
 
 func _on_connect_toggle(button_pressed):
-	var mqtt = get_node("../MQTT")
 	if button_pressed:
-		# Attempt to connect.
 		status_label.text = "Connecting..."
-		mqtt.client_id = "s%d" % randi()
-		if lastwill_topic.text.strip_edges() != "":
-			mqtt.set_last_will(lastwill_topic.text, lastwill_message.text, lastwill_retain.pressed)
-		else:
-			mqtt.set_last_will("", "", false)
-		if broker_user.text.strip_edges() != "":
-			mqtt.set_user_pass(broker_user.text, broker_pwd.text)
-		else:
-			mqtt.set_user_pass(null, null)
-
-		var url = broker_address.text.strip_edges()
-		var protocol = broker_protocol.get_item_text(broker_protocol.selected)
-		var port = broker_port.text.strip_edges()
-		var connect_url = "%s%s:%s" % [protocol, url, port]
-		var retval = mqtt.connect_to_broker(connect_url)
-		if retval:
-			status_label.text = "Connection initiated..."
-		else:
-			status_label.text = "Connection failed to initiate."
-			connect_toggle.pressed = false  # revert the toggle
+		connect_requested.emit(
+			broker_protocol.get_item_text(broker_protocol.selected),
+			broker_address.text.strip_edges(),
+			broker_port.text.strip_edges(),
+			broker_user.text.strip_edges(),
+			broker_pwd.text,
+			lastwill_topic.text.strip_edges(),
+			lastwill_message.text,
+			lastwill_retain.button_pressed
+		)
 	else:
 		status_label.text = "Disconnecting..."
-		mqtt.disconnect_from_server()
+		disconnect_requested.emit()
 		
 func _on_ok_pressed():
 	hide()
 	
 func _on_subscribe_pressed():
 	var qos = 0  # Adjust QoS as needed.
-	var mqtt = get_node("../MQTT")
 	var topic = $VBox/HBoxSubscriptions/subscribetopic.text.strip_edges()
-	mqtt.subscribe(topic, qos)
+	subscribe_requested.emit(topic, qos)
 	for i in range($VBox/HBoxSubscriptions/subscriptions.item_count):
 		if topic == $VBox/HBoxSubscriptions/subscriptions.get_item_text(i):
 			return
@@ -80,8 +73,7 @@ func _on_unsubscribe_pressed():
 	var sel_list = $VBox/HBoxSubscriptions/subscriptions
 	var sel = sel_list.selected
 	var topic = sel_list.get_item_text(sel)
-	var mqtt = get_node("../MQTT")
-	mqtt.unsubscribe(topic)
+	unsubscribe_requested.emit(topic)
 	sel_list.remove_item(sel_list.selected)
 	sel_list.disabled = (sel_list.item_count == 0)
 	$VBox/HBoxSubscriptions/unsubscribe.disabled = (sel_list.item_count == 0)
@@ -90,9 +82,73 @@ func _on_unsubscribe_pressed():
 		
 func _on_publish_pressed():
 	var qos = 0  # Adjust QoS as needed.
-	var mqtt = get_node("../MQTT")
-	mqtt.publish(
-		$VBox/HBoxPublish/publishtopic.text, 
-		$VBox/HBoxPublish/publishmessage.text, 
-		$VBox/HBoxPublish/publishretain.button_pressed, 
-		qos)
+	publish_requested.emit(
+		$VBox/HBoxPublish/publishtopic.text,
+		$VBox/HBoxPublish/publishmessage.text,
+		$VBox/HBoxPublish/publishretain.button_pressed,
+		qos
+	)
+
+
+func show_connected() -> void:
+	status_label.text = "connected."
+	_set_broker_settings_active(false)
+	_set_connected_actions_active(true)
+	connect_toggle.set_pressed_no_signal(true)
+
+
+func show_disconnected() -> void:
+	status_label.text = "disconnected."
+	_set_broker_settings_active(true)
+	_set_connected_actions_active(false)
+	connect_toggle.set_pressed_no_signal(false)
+
+
+func show_connection_failed() -> void:
+	status_label.text = "failed."
+	_set_broker_settings_active(true)
+	_set_connected_actions_active(false)
+	connect_toggle.set_pressed_no_signal(false)
+
+
+func show_connection_initiated() -> void:
+	status_label.text = "Connection initiated..."
+
+
+func show_connection_initiation_failed() -> void:
+	status_label.text = "Connection failed to initiate."
+	connect_toggle.set_pressed_no_signal(false)
+
+
+func clear_received_messages() -> void:
+	$VBox/subscribedmessages.clear()
+
+
+func append_received_message(topic: String, message, verbose_level: int) -> void:
+	if verbose_level == 2:
+		$VBox/subscribedmessages.append_text("[b]%s[/b] %s\n" % [topic, message])
+	else:
+		$VBox/subscribedmessages.append_text("[b]%s[/b]\n" % topic)
+
+
+func _set_broker_settings_active(active: bool) -> void:
+	broker_address.editable = active
+	broker_port.editable = active
+	broker_protocol.disabled = not active
+	lastwill_topic.editable = active
+	lastwill_message.editable = active
+	lastwill_retain.disabled = not active
+	connect_toggle.set_pressed_no_signal(not active)
+
+
+func _set_connected_actions_active(active: bool) -> void:
+	$VBox/HBoxSubscriptions/subscribetopic.editable = active
+	$VBox/HBoxSubscriptions/subscribe.disabled = not active
+	$VBox/HBoxPublish/publishtopic.editable = active
+	$VBox/HBoxPublish/publishmessage.editable = active
+	$VBox/HBoxPublish/publishretain.disabled = not active
+	$VBox/HBoxPublish/publish.disabled = not active
+	if not active:
+		$VBox/HBoxSubscriptions/subscriptions.clear()
+	$VBox/HBoxSubscriptions/subscriptions.disabled = true
+	$VBox/HBoxSubscriptions/unsubscribe.disabled = true

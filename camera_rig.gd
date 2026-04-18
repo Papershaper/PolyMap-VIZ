@@ -18,14 +18,13 @@ var _yaw:      float = 0.0
 var _pitch:    float
 
 func _ready():
-	# RobotMarkers is a sibling under GlobalMapScene
-	if get_parent().has_node("RobotMarkers"):
-		_markers = get_parent().get_node("RobotMarkers") as Node3D
-	else:
-		push_warning("CameraRig: no RobotMarkers under " + get_parent().name)
 	_distance = default_distance
 	_pitch    = deg_to_rad(default_pitch)
 	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
+
+
+func set_markers_container(markers: Node3D) -> void:
+	_markers = markers
 
 
 func follow_target(node: Node3D) -> void:

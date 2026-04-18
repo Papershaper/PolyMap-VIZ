@@ -1,10 +1,11 @@
 extends Panel
 
+signal state_command_requested(robot_id: String, command_value: String)
+signal manual_command_requested(robot_id: String, action: String, args: Dictionary)
+
 # A property to store the unique robot identifier.
 var robot_id: String
 
-# Preload or get the MQTT node as needed.
-@onready var mqtt_node = get_node("/root/MainScene/MQTT")
 @onready var robot_info_label = $VBoxContainer/Label
 @onready var manual_button = $VBoxContainer/StateChangeButtons/manual
 @onready var autonomous_button = $VBoxContainer/StateChangeButtons/autonomous
@@ -61,24 +62,11 @@ func _on_move_pressed() -> void:
 	_publish_command("manual", "move", {"distance_cm": distance_val})
 		
 func _on_scan_pressed() -> void:
-	_publish_command("manual", "scan")
+	manual_command_requested.emit(robot_id, "scan", {})
 
-func _publish_command(command_type: String, command_value: String, _args: Dictionary = {}) -> void:
-	var payload = ""
-	var topic = ""
+
+func _publish_command(command_type: String, command_value: String, args: Dictionary = {}) -> void:
 	if command_type == "state":
-		topic = "PolyMap/%s/cmd/state" % robot_id
-		payload = command_value
+		state_command_requested.emit(robot_id, command_value)
 	elif command_type == "manual":
-		topic = "PolyMap/%s/cmd/manual" % robot_id
-		if command_value == "turn":
-			var angle = _args.get("angle_deg", 0)
-			payload = '{"action":"turn", "angle_deg": %s, "speed":200, "timeout":5000}' % [angle]
-		elif command_value == "move":
-			var distance = _args.get("distance_cm", 0)
-			payload = '{"action":"move", "distance_cm": %s, "speed": 200, "timeout":10000}' % [distance]
-		elif command_value == "scan":
-			payload = '{"action":"scan", "start_angle":30, "end_angle":150, "speed": 60, "timeout":10000}'
-		
-	mqtt_node.publish(topic, payload)
-	print("Published command to ", topic, ":", payload)
+		manual_command_requested.emit(robot_id, command_value, args)

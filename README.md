@@ -20,20 +20,24 @@
 
 - `MainScene.tscn` / `main_scene.gd`
   - Main operator UI.
-  - Connects MQTT signals.
-  - Routes incoming MQTT messages into map updates and telemetry cards.
+  - Owns the in-tree MQTT node and all runtime MQTT calls.
+  - Routes incoming MQTT messages into map updates and telemetry cards via `polymap_mqtt.gd`.
   - Handles `Clear` and `Reset` UI actions.
+- `polymap_mqtt.gd`
+  - Narrow PolyMap MQTT helper.
+  - Centralizes topic matching, topic building, and message encode/decode helpers used by the runtime.
 - `global_map_scene.tscn` / `global_map.gd`
   - 3D global map renderer.
   - Builds a `MultiMesh` from the incoming `global_map` array.
-  - Creates and updates robot markers from telemetry.
+  - Creates and updates robot markers from telemetry using the current map dimensions.
 - `telemetry_item.tscn` / `telemetry_item.gd`
   - Per-robot telemetry card.
   - Displays pose and state fields.
-  - Publishes state and manual command topics for that robot.
+  - Emits operator command intent for that robot back to `MainScene`.
 - `connection_dialog.tscn` / `connection_dialog.gd`
   - Manual broker connect/disconnect UI.
   - Manual subscribe, unsubscribe, and arbitrary publish UI.
+  - Emits broker and publish/subscribe intent back to `MainScene`.
 - `addons/mqtt/mqtt.gd`
   - Local MQTT 3.1.1 client implementation used by the main scene.
 - `mqttexample.tscn` / `mqttexample.gd`
@@ -55,8 +59,8 @@
   - username `local_test`
   - password `local_pwd`
 - Implemented message handling in the runtime scene:
-  - topics beginning with `PolyMap/global_map` are parsed as global map updates
-  - any topic containing `telemetry` is parsed as robot telemetry
+  - topics beginning with `PolyMap/global_map` are currently still parsed as global map updates
+  - any topic containing `telemetry` is currently still parsed as robot telemetry
 - The UI also publishes commands:
   - `PolyMap/<robot_id>/cmd/state`
   - `PolyMap/<robot_id>/cmd/manual`
@@ -77,6 +81,8 @@
   - `robot_state`
   - `agent_state`
 - Telemetry also drives robot marker placement in the 3D view.
+- Once a `global_map` has been received, robot marker Y/Z placement uses the received map height.
+- If telemetry arrives before the first map, the marker is shown using raw telemetry grid coordinates until a map arrives and reprojection can occur.
 - Operator controls available from each telemetry card:
   - state changes: `Manual`, `Autonomous`, `Pause`, `Standby`
   - manual actions: `Move`, `Turn`, `Scan`
@@ -95,5 +101,4 @@
 - MQTT topic handling is split across multiple scripts instead of one contract definition.
 - Telemetry parsing assumes the robot ID is the second topic segment.
 - Telemetry matching is broad: any subscribed topic containing `telemetry` is treated as telemetry.
-- Robot marker placement uses a hard-coded `120` row flip, while map rendering uses the actual received map height.
-- `telemetry_item.gd` looks up the MQTT node via `/root/MainScene/MQTT`, which couples the control cards to the current scene path.
+- Topic matching is still intentionally permissive during the current migration, even though the helper now centralizes it.

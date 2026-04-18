@@ -1,75 +1,35 @@
 extends Node3D
 
 # Define grid parameters (will be updated dynamically)
-var grid_width: int = 20    # number of cells along x
-var grid_height: int = 20   # number of cells along z
 var cell_size: float = 1.0
+var current_map_cols: int = 0
+var current_map_rows: int = 0
+var latest_robot_poses: Dictionary = {}
+
+const MARKER_HEIGHT := 2.0
+const MARKER_BASE_RADIUS := 1.0
+
+@onready var grid = $Grid
+@onready var map_floor = $MapFloor
+@onready var robot_markers = $RobotMarkers
+@onready var camera_rig = $CameraRig
 
 
 func _ready():
-	# Optionally, initialize or wait for the first update.
-	pass
+	camera_rig.set_markers_container(robot_markers)
 
 func clear_map() -> void:
 	# Clear only the children of the Grid node.
-	for child in $Grid.get_children():
-		$Grid.remove_child(child)
+	for child in grid.get_children():
+		grid.remove_child(child)
 		child.queue_free()
 
 func update_robot_marker(robot_id: String, pose_data: Dictionary) -> void:
-	# Ensure a container node for robot markers exists. We'll call it "RobotMarkers"
-	var markers = get_node_or_null("RobotMarkers")
-	if markers == null:
-		markers = Node3D.new()
-		markers.name = "RobotMarkers"
-		add_child(markers)
-
-	# Remove any existing marker for this robot_id.
-	var existing_marker = markers.get_node_or_null(robot_id)
-	if existing_marker:
-		markers.remove_child(existing_marker)
-		existing_marker.queue_free()
-
-	# Create a new MeshInstance3D for the marker.
-	var marker = MeshInstance3D.new()
-	marker.name = robot_id  # so we can look it up later
-
-	# Create a ConeMesh as a simple visual indicator.
-	var cone = CylinderMesh.new()
-	cone.height = 2.0             # Height of the cone.
-	cone.top_radius = 0.0          # Tip of the cone.
-	cone.bottom_radius = 1.0       # Base radius.
-	marker.mesh = cone
-
-	# Create a simple material to make the marker distinct.
-	var material = StandardMaterial3D.new()
-	material.albedo_color = Color(1, 0.5, 0)  # Orange color, for example.
-	marker.material_override = material
-
-	# Calculate the position using gridX and gridY from the telemetry data.
-	# Assuming that gridX and gridY are provided in telemetry and correspond to grid indices.
-	var grid_x = pose_data.get("gridX", 0)
-	var grid_y = pose_data.get("gridY", 0)
-	# Position the marker; you might want to use the center of the cell by adding half of cell_size.
-	var rows = 120  #/* the same map_array.size() you used in update_map */;
-	var flipped_grid_y = rows - 1 - grid_y
-	var pos = Vector3(grid_x * cell_size + cell_size / 2.0, 0, flipped_grid_y * cell_size + cell_size / 2.0)
-	marker.position = pos
-
-	# Set the marker's rotation.
-	# First, rotate -90° around the X axis so the cone's tip (originally up) points forward (-Z).
-	# Then, rotate around Y by the telemetry orientation (orientation_rad).
-	var orientation_rad = pose_data.get("orientation_rad", 0.0)
-	marker.rotation = Vector3(-PI/2, orientation_rad -PI/2, 0)
-	
-	# Optionally, adjust the height so the cone appears above the map.
-	# For example, raise it by half its height:
-	marker.position.y += cone.height / 2.0
-
-	# Add the marker to the markers container.
-	markers.add_child(marker)
-	$CameraRig.follow_target(marker)
-	print("Updated marker for robot:", robot_id, "at position", pos, "with rotation", marker.rotation)
+	latest_robot_poses[robot_id] = pose_data.duplicate(true)
+	var marker = _get_or_create_marker(robot_id)
+	_apply_pose_to_marker(marker, pose_data)
+	camera_rig.follow_target(marker)
+	print("Updated marker for robot:", robot_id, "at position", marker.position, "with rotation", marker.rotation)
 
 func update_map(data: Dictionary) -> void:
 	var map_array = data.get("global_map", [])
@@ -77,9 +37,12 @@ func update_map(data: Dictionary) -> void:
 	if rows == 0:
 		return
 	var cols = map_array[0].size()
+	current_map_rows = rows
+	current_map_cols = cols
 
 	# clear previous
 	clear_map()
+	_update_map_floor()
 
 	# build single MultiMesh for all cells
 	var mm = MultiMesh.new()
@@ -153,9 +116,14 @@ func update_map(data: Dictionary) -> void:
 			mm.set_instance_color(idx, byte_to_color(raw))
 			idx += 1
 
-	$Grid.add_child(inst)
+	grid.add_child(inst)
+	_reproject_all_robot_markers()
 	print("Map updated: ", cols, "×", rows)
-	
+
+
+func reset_view() -> void:
+	camera_rig.reset_view()
+		
 func byte_to_color(v: int) -> Color:
 	# 128 = unknown slate‐gray
 	if v == 128:
@@ -213,4 +181,55 @@ func occupancy_to_colour(val: int) -> Color:
 		var alpha = lerp(0.5, 1.0, norm)
 		var grey  = lerp(0.7, 0.0, norm)
 		return Color(grey, grey, grey, alpha)
+
+
+func _update_map_floor() -> void:
+	if current_map_rows <= 0 or current_map_cols <= 0:
+		return
+	map_floor.size = Vector3(current_map_cols * cell_size, 0.05, current_map_rows * cell_size)
+	map_floor.position = Vector3(current_map_cols * cell_size / 2.0, -0.5, current_map_rows * cell_size / 2.0)
+
+
+func _reproject_all_robot_markers() -> void:
+	for robot_id in latest_robot_poses.keys():
+		var marker = _get_or_create_marker(robot_id)
+		_apply_pose_to_marker(marker, latest_robot_poses[robot_id])
+
+
+func _get_or_create_marker(robot_id: String) -> MeshInstance3D:
+	var marker = robot_markers.get_node_or_null(robot_id) as MeshInstance3D
+	if marker != null:
+		return marker
+
+	marker = MeshInstance3D.new()
+	marker.name = robot_id
+
+	var cone = CylinderMesh.new()
+	cone.height = MARKER_HEIGHT
+	cone.top_radius = 0.0
+	cone.bottom_radius = MARKER_BASE_RADIUS
+	marker.mesh = cone
+
+	var material = StandardMaterial3D.new()
+	material.albedo_color = Color(1, 0.5, 0)
+	marker.material_override = material
+
+	robot_markers.add_child(marker)
+	return marker
+
+
+func _apply_pose_to_marker(marker: MeshInstance3D, pose_data: Dictionary) -> void:
+	marker.position = _pose_to_world_position(pose_data)
+	var orientation_rad = pose_data.get("orientation_rad", 0.0)
+	marker.rotation = Vector3(-PI / 2, orientation_rad - PI / 2, 0)
+	marker.position.y += MARKER_HEIGHT / 2.0
+
+
+func _pose_to_world_position(pose_data: Dictionary) -> Vector3:
+	var grid_x = float(pose_data.get("gridX", 0))
+	var grid_y = float(pose_data.get("gridY", 0))
+	var z = grid_y
+	if current_map_rows > 0:
+		z = current_map_rows - 1 - grid_y
+	return Vector3(grid_x * cell_size + cell_size / 2.0, 0, z * cell_size + cell_size / 2.0)
 		
