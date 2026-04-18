@@ -1,6 +1,6 @@
 # AGENTS.md
 
-This repository is a Godot-based mission-control visualization and operator-console project for the PolyMap / Minone robotics system.
+This repository is a Godot 4.5 based mission-control visualization and operator-console project for the PolyMap / Minone robotics system.
 
 ## Product Direction
 
@@ -57,7 +57,10 @@ When working in this repository, prioritize the following:
 
 ### Godot Structure
 
+- We are using Godot 4.5.1 or later.
 - Preserve the existing project entry point unless explicitly asked to change it.
+- Always use @onready for node references. Prefer composition over inheritance.
+- When adding nodes to a scene, use the .tscn format.
 - Favor scenes for composition and scripts for behavior.
 - Keep scene scripts lean where practical.
 - Move reusable or non-visual logic into plain GDScript classes or service-style scripts where that improves clarity.
